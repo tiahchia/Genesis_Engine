@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genesis Engine - Synthetic Life Editor</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&family=IBM+Plex+Mono:wght@400;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --creation-white: #ffffff;
+            --destruction-red: #ff0033;
+            --dna-blue: #0066ff;
+            --rna-green: #00cc66;
+            --protein-purple: #9900ff;
+            --cell-membrane: rgba(255, 255, 255, 0.1);
+            --edit-glow: rgba(0, 255, 136, 0.5);
+            --cut-shadow: rgba(255, 0, 51, 0.3);
+            --helix-back: rgba(255, 255, 255, 0.05);
+        }
+        
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: #000;
+            color: #fff;
+            overflow-x: hidden;
+            cursor: none;
+            min-height: 100vh;
+        }
+        
+        /* Cellular Background */
+        .cellular-environment {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: 
+                radial-gradient(ellipse at 20% 30%, rgba(0, 102, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 70%, rgba(0, 204, 102, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(153, 0, 255, 0.05) 0%, transparent 60%);
+        }
+        
+        /* Floating Organelles */
+        .organelles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+        
+        .organelle {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(40px);
+            opacity: 0.3;
+            animation: organelleFloat 15s ease-in-out infinite;
+        }
+        
+        .organelle.nucleus {
+            width: 200px;
+            height: 200px;
+            background: rgba(0, 102, 255, 0.3);
+            top: 20%;
+            left: 10%;
+        }
+        
+        .organelle.mitochondria {
+            width: 150px;
+            height: 80px;
+            background: rgba(0, 204, 102, 0.2);
+            border-radius: 40px;
+            top: 60%;
+            right: 15%;
+            animation-delay: -5s;
+        }
+        
+        .organelle.ribosome {
+            width: 60px;
+            height: 60px;
+            background: rgba(153, 0, 255, 0.25);
+            bottom: 30%;
+            left: 30%;
+            animation-delay: -10s;
+        }
+        
+        @keyframes organelleFloat {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(30px, -30px); }
+            50% { transform: translate(-20px, 20px); }
+            75% { transform: translate(20px, 30px); }
+        }
+        
+        /* Gene Editing Cursor Tools */
+        .genesis-cursor {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transition: all 0.1s;
+        }
+        
+        .cursor-crispr {
+            width: 50px;
+            height: 50px;
+            opacity: 0;
+            position: relative;
+        }
+        
+        .cursor-crispr.active {
+            opacity: 1;
+        }
+        
+        .crispr-scissors {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 30px;
+            height: 2px;
+            background: linear-gradient(90deg, var(--destruction-red), transparent);
+            transform: translate(-50%, -50%) rotate(-45deg);
+            box-shadow: 0 0 10px var(--destruction-red);
+        }
+        
+        .crispr-scissors::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--destruction-red), transparent);
+            transform: rotate(90deg);
+        }
+        
+        .cursor-polymerase {
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--rna-green);
+            border-radius: 50%;
+            opacity: 0;
+            position: relative;
+            animation: polymerasePulse 2s ease-in-out infinite;
+        }
+        
+        .cursor-polymerase.active {
+            opacity: 1;
+        }
+        
+        .cursor-polymerase::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 8px;
+            height: 8px;
+            background: var(--rna-green);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px var(--rna-green);
+        }
+        
+        @keyframes polymerasePulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(0, 204, 102, 0.3); }
+            50% { transform: scale(1.2); box-shadow: 0 0 40px rgba(0, 204, 102, 0.5); }
+        }
+        
+        /* Genome Navigation */
+        .genome-nav {
+            position: fixed;
+            top: 40px;
+            left: 40px;
+            z-index: 100;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+        
+        .nav-header {
+            font-size: 10px;
+            color: var(--rna-green);
+            letter-spacing: 0.3em;
+            margin-bottom: 20px;
+        }
+        
+        .chromosome-list {
+            list-style: none;
+        }
+        
+        .chromosome {
+            padding: 12px 20px;
+            margin: 8px 0;
+            border-left: 2px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 12px;
+            opacity: 0.5;
+        }
+        
+        .chromosome:hover,
+        .chromosome.active {
+            border-left-color: var(--dna-blue);
+            background: rgba(0, 102, 255, 0.1);
+            opacity: 1;
+        }
+        
+        .chr-number {
+            color: var(--dna-blue);
+            margin-right: 10px;
+        }
+        
+        .chr-status {
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 4px;
+        }
+        
+        /* Central DNA Helix */
+        .dna-sanctuary {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            perspective: 1000px;
+        }
+        
+        .helix-container {
+            position: relative;
+            width: 400px;
+            height: 600px;
+            transform-style: preserve-3d;
+        }
+        
+        .dna-strand {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            animation: helixRotate 20s linear infinite;
+        }
+        
+        @keyframes helixRotate {
+            from { transform: rotateY(0deg); }
+            to { transform: rotateY(360deg); }
+        }
+        
+        .base-pair {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform-style: preserve-3d;
+        }
+        
+        .base {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin: 0 40px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .base.a { background: var(--destruction-red); box-shadow: 0 0 20px rgba(255, 0, 51, 0.5); }
+        .base.t { background: var(--dna-blue); box-shadow: 0 0 20px rgba(0, 102, 255, 0.5); }
+        .base.g { background: var(--rna-green); box-shadow: 0 0 20px rgba(0, 204, 102, 0.5); }
+        .base.c { background: var(--protein-purple); box-shadow: 0 0 20px rgba(153, 0, 255, 0.5); }
+        
+        .base:hover {
+            transform: scale(1.3);
+        }
+        
+        .base::after {
+            content: attr(data-base);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 14px;
+            font-weight: bold;
+            color: #fff;
+        }
+        
+        .base-connector {
+            position: absolute;
+            width: 80px;
+            height: 2px;
+            background: linear-gradient(90deg, var(--helix-back), rgba(255,255,255,0.3), var(--helix-back));
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .genesis-title {
+            text-align: center;
+            margin-top: 60px;
+            z-index: 10;
+        }
+        
+        .genesis-title h1 {
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, var(--rna-green), var(--dna-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
+        }
+        
+        .genesis-title p {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 0.2em;
+        }
+        
+        /* Gene Editing Workspace */
+        .editing-workspace {
+            max-width: 1000px;
+            margin: 100px auto;
+            padding: 0 40px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 40px;
+        }
+        
+        .gene-sequence {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 14px;
+            line-height: 2;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .gene-sequence::before {
+            content: 'SEQUENCE: BRCA1';
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .nucleotide {
+            display: inline-block;
+            padding: 2px 6px;
+            margin: 0 1px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .nucleotide:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .nucleotide.cut {
+            background: var(--cut-shadow);
+            text-decoration: line-through;
+            color: var(--destruction-red);
+        }
+        
+        .nucleotide.edit {
+            background: var(--edit-glow);
+            animation: editPulse 2s infinite;
+        }
+        
+        @keyframes editPulse {
+            0%, 100% { box-shadow: 0 0 5px var(--edit-glow); }
+            50% { box-shadow: 0 0 20px var(--edit-glow); }
+        }
+        
+        .codon-marker {
+            position: absolute;
+            bottom: -20px;
+            left: 0;
+            font-size: 9px;
+            color: var(--rna-green);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .nucleotide:hover .codon-marker {
+            opacity: 1;
+        }
+        
+        /* Protein Folding Preview */
+        .protein-preview {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .protein-label {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 0.1em;
+        }
+        
+        .folding-animation {
+            width: 200px;
+            height: 200px;
+            position: relative;
+        }
+        
+        .protein-chain {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            animation: foldProtein 10s ease-in-out infinite;
+        }
+        
+        @keyframes foldProtein {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(90deg) scale(0.9); }
+            50% { transform: rotate(180deg) scale(1.1); }
+            75% { transform: rotate(270deg) scale(0.95); }
+        }
+        
+        .amino-acid {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--protein-purple);
+            box-shadow: 0 0 10px rgba(153, 0, 255, 0.5);
+        }
+        
+        /* Creation/Destruction Duality */
+        .duality-control {
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            width: 300px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 25px;
+            z-index: 100;
+        }
+        
+        .control-header {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            color: var(--rna-green);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .duality-slider {
+            position: relative;
+            height: 40px;
+            background: linear-gradient(90deg, var(--destruction-red), var(--creation-white));
+            border-radius: 20px;
+            cursor: pointer;
+            overflow: hidden;
+        }
+        
+        .slider-thumb {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            transition: left 0.3s;
+        }
+        
+        .duality-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 10px;
+        }
+        
+        .label-destroy { color: var(--destruction-red); }
+        .label-create { color: var(--creation-white); }
+        
+        .edit-stats {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 11px;
+        }
+        
+        .stat-label {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .stat-value {
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--rna-green);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .editing-workspace { grid-template-columns: 1fr; }
+            .genome-nav { display: none; }
+            .helix-container { width: 300px; height: 450px; }
+            .duality-control { width: calc(100% - 80px); left: 40px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="cellular-environment"></div>
+    <div class="organelles">
+        <div class="organelle nucleus"></div>
+        <div class="organelle mitochondria"></div>
+        <div class="organelle ribosome"></div>
+    </div>
+    
+    <div class="genesis-cursor cursor-crispr" id="crispr"></div>
+    <div class="genesis-cursor cursor-polymerase" id="polymerase"></div>
+    
+    <nav class="genome-nav">
+        <div class="nav-header">GENOME_BROWSER_v2.0</div>
+        <ul class="chromosome-list">
+            <li class="chromosome active" data-chr="1" onclick="selectChromosome(1)">
+                <span class="chr-number">CHR 1</span>
+                <span>Housekeeping Genes</span>
+                <div class="chr-status">8% EDITED</div>
+            </li>
+            <li class="chromosome" data-chr="7" onclick="selectChromosome(7)">
+                <span class="chr-number">CHR 7</span>
+                <span>Cystic Fibrosis</span>
+                <div class="chr-status">CORRECTED</div>
+            </li>
+            <li class="chromosome" data-chr="17" onclick="selectChromosome(17)">
+                <span class="chr-number">CHR 17</span>
+                <span>BRCA1 Tumor Suppressor</span>
+                <div class="chr-status">SEQUENCING</div>
+            </li>
+            <li class="chromosome" data-chr="x" onclick="selectChromosome('x')">
+                <span class="chr-number">CHR X</span>
+                <span>X-Linked Traits</span>
+                <div class="chr-status">PENDING</div>
+            </li>
+        </ul>
+    </nav>
+    
+    <section class="dna-sanctuary">
+        <div class="helix-container">
+            <div class="dna-strand" id="dnaStrand">
+                <!-- Base pairs generated by JS -->
+            </div>
+        </div>
+        <div class="genesis-title">
+            <h1>GENESIS ENGINE</h1>
+            <p>SYNTHETIC LIFE EDITOR</p>
+        </div>
+    </section>
+    
+    <section class="editing-workspace">
+        <div class="gene-sequence" id="geneSequence">
+            <span class="nucleotide" data-base="A" onclick="editBase(this)">A<span class="codon-marker">START</span></span>
+            <span class="nucleotide" data-base="T" onclick="editBase(this)">T</span>
+            <span class="nucleotide" data-base="G" onclick="editBase(this)">G</span>
+            <span class="nucleotide" data-base="C" onclick="editBase(this)">C</span>
+            <span class="nucleotide" data-base="A" onclick="editBase(this)">A</span>
+            <span class="nucleotide" data-base="A" onclick="editBase(this)">A<span class="codon-marker">LYS</span></span>
+            <span class="nucleotide" data-base="T" onclick="editBase(this)">T</span>
+            <span class="nucleotide" data-base="T" onclick="editBase(this)">T</span>
+            <span class="nucleotide cut" data-base="G" onclick="editBase(this)">G</span>
+            <span class="nucleotide cut" data-base="C" onclick="editBase(this)">C</span>
+            <span class="nucleotide edit" data-base="A" onclick="editBase(this)">A<span class="codon-marker">INSERT</span></span>
+            <span class="nucleotide" data-base="T" onclick="editBase(this)">T</span>
+            <span class="nucleotide" data-base="G" onclick="editBase(this)">G</span>
+            <span class="nucleotide" data-base="C" onclick="editBase(this)">C</span>
+            <span class="nucleotide" data-base="C" onclick="editBase(this)">C<span class="codon-marker">STOP</span></span>
+            <span class="nucleotide" data-base="G" onclick="editBase(this)">G</span>
+            <span class="nucleotide" data-base="T" onclick="editBase(this)">T</span>
+            <span class="nucleotide" data-base="A" onclick="editBase(this)">A</span>
+        </div>
+        
+        <div class="protein-preview">
+            <div class="protein-label">PROTEIN FOLDING PREVIEW</div>
+            <div class="folding-animation" id="foldingAnim">
+                <!-- Amino acids generated by JS -->
+            </div>
+        </div>
+    </section>
+    
+    <div class="duality-control">
+        <div class="control-header">
+            <span>EDIT_MODE</span>
+            <span id="modeStatus">CREATE</span>
+        </div>
+        <div class="duality-slider" onclick="toggleDuality(event)">
+            <div class="slider-thumb" id="dualityThumb" style="left: 70%;"></div>
+        </div>
+        <div class="duality-labels">
+            <span class="label-destroy">CUT (CRISPR)</span>
+            <span class="label-create">INSERT (Polymerase)</span>
+        </div>
+        <div class="edit-stats">
+            <div class="stat-row">
+                <span class="stat-label">BASES EDITED</span>
+                <span class="stat-value" id="basesEdited">247</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">OFF-TARGET EFFECTS</span>
+                <span class="stat-value" style="color: var(--destruction-red);">0.03%</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">VIABILITY SCORE</span>
+                <span class="stat-value">98.7%</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Generate DNA helix
+        const dnaStrand = document.getElementById('dnaStrand');
+        const basePairs = 20;
+        const bases = ['A', 'T', 'G', 'C'];
+        const complements = { A: 'T', T: 'A', G: 'C', C: 'G' };
+        
+        for (let i = 0; i < basePairs; i++) {
+            const base = bases[Math.floor(Math.random() * 4)];
+            const pair = document.createElement('div');
+            pair.className = 'base-pair';
+            pair.style.top = (i * 25) + 'px';
+            pair.style.transform = `translateX(-50%) rotateY(${i * 30}deg)`;
+            
+            const base1 = document.createElement('div');
+            base1.className = `base ${base.toLowerCase()}`;
+            base1.setAttribute('data-base', base);
+            
+            const connector = document.createElement('div');
+            connector.className = 'base-connector';
+            
+            const base2 = document.createElement('div');
+            base2.className = `base ${complements[base].toLowerCase()}`;
+            base2.setAttribute('data-base', complements[base]);
+            
+            pair.appendChild(base1);
+            pair.appendChild(connector);
+            pair.appendChild(base2);
+            dnaStrand.appendChild(pair);
+        }
+        
+        // Generate protein folding
+        const foldingAnim = document.getElementById('foldingAnim');
+        for (let i = 0; i < 12; i++) {
+            const acid = document.createElement('div');
+            acid.className = 'amino-acid';
+            acid.style.left = (Math.random() * 180) + 'px';
+            acid.style.top = (Math.random() * 180) + 'px';
+            acid.style.animationDelay = (i * 0.2) + 's';
+            foldingAnim.appendChild(acid);
+        }
+        
+        // Cursor system
+        const crispr = document.getElementById('crispr');
+        const polymerase = document.getElementById('polymerase');
+        let mouseX = 0, mouseY = 0;
+        let cursorX = 0, cursorY = 0;
+        let currentTool = 'polymerase';
+        let editMode = 'create'; // or 'destroy'
+        
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+        
+        function animateCursor() {
+            cursorX += (mouseX - cursorX) * 0.1;
+            cursorY += (mouseY - cursorY) * 0.1;
+            
+            if (currentTool === 'crispr') {
+                crispr.style.left = cursorX - 25 + 'px';
+                crispr.style.top = cursorY - 25 + 'px';
+            } else {
+                polymerase.style.left = cursorX - 20 + 'px';
+                polymerase.style.top = cursorY - 20 + 'px';
+            }
+            
+            requestAnimationFrame(animateCursor);
+        }
+        animateCursor();
+        
+        polymerase.classList.add('active');
+        
+        // Tool switching based on mode
+        function updateTool() {
+            if (editMode === 'destroy') {
+                polymerase.classList.remove('active');
+                crispr.classList.add('active');
+                currentTool = 'crispr';
+            } else {
+                crispr.classList.remove('active');
+                polymerase.classList.add('active');
+                currentTool = 'polymerase';
+            }
+        }
+        
+        // Chromosome selection
+        function selectChromosome(chr) {
+            document.querySelectorAll('.chromosome').forEach(c => c.classList.remove('active'));
+            document.querySelector(`[data-chr="${chr}"]`).classList.add('active');
+            
+            // Regenerate DNA with different pattern
+            dnaStrand.innerHTML = '';
+            for (let i = 0; i < basePairs; i++) {
+                const base = bases[Math.floor(Math.random() * 4)];
+                const pair = document.createElement('div');
+                pair.className = 'base-pair';
+                pair.style.top = (i * 25) + 'px';
+                pair.style.transform = `translateX(-50%) rotateY(${i * 30 + (chr * 10)}deg)`;
+                
+                const base1 = document.createElement('div');
+                base1.className = `base ${base.toLowerCase()}`;
+                base1.setAttribute('data-base', base);
+                
+                const connector = document.createElement('div');
+                connector.className = 'base-connector';
+                
+                const base2 = document.createElement('div');
+                base2.className = `base ${complements[base].toLowerCase()}`;
+                base2.setAttribute('data-base', complements[base]);
+                
+                pair.appendChild(base1);
+                pair.appendChild(connector);
+                pair.appendChild(base2);
+                dnaStrand.appendChild(pair);
+            }
+        }
+        
+        // Base editing
+        function editBase(element) {
+            if (editMode === 'destroy') {
+                element.classList.toggle('cut');
+            } else {
+                element.classList.toggle('edit');
+                // Cycle through bases
+                const current = element.getAttribute('data-base');
+                const next = bases[(bases.indexOf(current) + 1) % 4];
+                element.setAttribute('data-base', next);
+                element.innerHTML = next + element.innerHTML.substring(1);
+            }
+            
+            // Update stats
+            const edited = document.querySelectorAll('.nucleotide.cut, .nucleotide.edit').length;
+            document.getElementById('basesEdited').textContent = 247 + edited;
+        }
+        
+        // Duality toggle
+        function toggleDuality(event) {
+            const slider = event.currentTarget;
+            const thumb = document.getElementById('dualityThumb');
+            const rect = slider.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const percent = Math.max(10, Math.min(90, (x / rect.width) * 100));
+            
+            thumb.style.left = percent + '%';
+            
+            if (percent < 40) {
+                editMode = 'destroy';
+                document.getElementById('modeStatus').textContent = 'CUT';
+                document.getElementById('modeStatus').style.color = 'var(--destruction-red)';
+            } else if (percent > 60) {
+                editMode = 'create';
+                document.getElementById('modeStatus').textContent = 'INSERT';
+                document.getElementById('modeStatus').style.color = 'var(--rna-green)';
+            } else {
+                editMode = 'neutral';
+                document.getElementById('modeStatus').textContent = 'SCAN';
+                document.getElementById('modeStatus').style.color = '#fff';
+            }
+            
+            updateTool();
+        }
+        
+        // Hover effects for tool switching
+        document.querySelectorAll('.gene-sequence').forEach(seq => {
+            seq.addEventListener('mouseenter', updateTool);
+        });
+        
+        // Random protein folding update
+        setInterval(() => {
+            const acids = document.querySelectorAll('.amino-acid');
+            acids.forEach(acid => {
+                if (Math.random() > 0.7) {
+                    acid.style.left = (Math.random() * 180) + 'px';
+                    acid.style.top = (Math.random() * 180) + 'px';
+                }
+            });
+        }, 3000);
+    </script>
+</body>
+</html
